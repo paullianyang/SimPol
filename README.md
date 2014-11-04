@@ -8,18 +8,18 @@
 #####Data Collection
 > Ideally, Obtain officer count by district, response times by district, and crime by location
 
-####Currently found/available:
-  >Salary by employee without location
-  >Crime by location, type and severity
-  >Staffing in aggregate by police district
+####Currently found/available:  
+  >Salary by employee without location  
+  >Crime by location, type and severity  
+  >Staffing in aggregate by police district  
   >Outdated aggregated response times for 2001-2003
 
 #####Analysis  
 1. Use clustering to group crime data by geolocation, type/severity, and various time metrics
 2. Identify cluster centers and intersections as an initial hypothesis for optimal locations  
 3. Look at the relationship between staffing counts by PD vs the number of incidents each PD responds to
-4. Identify relationship between response time vs traffic data, distance from incident, and available police staff
-  >If 3 & 4 are available, see if there's a relationship between response time and total salary per PD
+4. Identify relationship between response time vs traffic data, distance from incident, and available police staff  
+  >If 3 & 4 are available, see if there's a relationship between response time and total salary per PD  
   >If 3 & 4 are not available, assume response time is solely dependent on distance between PD and crime, and the ratio between staff and crime occurences.
 5. Predict response time with hypothetical optimal locations
 6. [Extra] Predict probability of a crime incident by crime cluster/type looking at historic data.
