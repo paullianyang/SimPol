@@ -35,19 +35,12 @@
 5. Show optimal locations if PD can be dynamically located. In this case, PD is conceptually where the majority of the patrols should be occuring.
 
 ####Datasources:
-* 2013-2014 Staffing Counts by County and District  
->http://post.ca.gov/Data/Sites/1/post_docs/hiring/le-employment-stats.pdf
-* 2013-2014 Salary by Department and Title  
->https://data.sfgov.org/City-Management-and-Ethics/Employee-Compensation/88g8-5mnd
-* SF Police Stations  
->https://data.sfgov.org/Public-Safety/San-Francisco-Police-Stations/8xyy-6zfh
-* 2003-Present Reported Incidents  
->https://data.sfgov.org/Public-Safety/SFPD-Reported-Incidents-2003-to-Present/dyj4-n68b  
-* 2001-2003 Police Response Times
->http://sfcontroller.org/Modules/ShowDocument.aspx?documentid=1063
+* [2013-2014 Staffing Counts by County and District](http://post.ca.gov/Data/Sites/1/post_docs/hiring/le-employment-stats.pdf)
+* [2013-2014 Salary by Department and Title](https://data.sfgov.org/City-Management-and-Ethics/Employee-Compensation/88g8-5mnd)
+* [SF Police Stations](https://data.sfgov.org/Public-Safety/San-Francisco-Police-Stations/8xyy-6zfh)
+* [2003-Present Reported Incidents](https://data.sfgov.org/Public-Safety/SFPD-Reported-Incidents-2003-to-Present/dyj4-n68b)
+* [2001-2003 Police Response Times](http://sfcontroller.org/Modules/ShowDocument.aspx?documentid=1063)
 
 ####References:
-* Model crime with Levy flights
->https://dl.dropboxusercontent.com/u/67300625/tum_summer_2012_levicrime.pdf
-* A very similar study
->http://ced.berkeley.edu/faculty/ratt/classes/c188/2009Posters/Visconti%20Zhang%20Poster.pdf
+* [Model crime with Levy flights](https://dl.dropboxusercontent.com/u/67300625/tum_summer_2012_levicrime.pdf)
+* [A very similar study](http://ced.berkeley.edu/faculty/ratt/classes/c188/2009Posters/Visconti%20Zhang%20Poster.pdf)
