@@ -21,9 +21,9 @@
 #####Analysis  
 1. Use clustering to group crime data by geolocation, type/severity, and various time metrics, and identify cluster centers as hypothetical police stations
 2. Look at the relationship between staffing counts by PD vs the number of incidents each PD responds to
-3. Identify relationship between response time vs traffic data, distance from incident, and available police staff  
->If 2 & 3 are available, look at the relationship between response times and staffing.
->If 2 & 3 are not available, estimate a minimum staff per district by the incidents that were covered, and look at the relationship between the number of handled incidents vs distance from police station.
+3. Identify relationship between response time vs traffic data, distance from incident, and available police staff
+ 1. If 2 & 3 are available, look at the relationship between response times and staffing.
+ 2. If 2 & 3 are not available, estimate a minimum staff per district by the incidents that were covered, and look at the relationship between the number of handled incidents vs distance from police station.
 4. Predict response time/coverage with hypothetical optimal locations
 5. [Extra] Predict probability of a crime incident by crime cluster/type looking at historic data.
 
