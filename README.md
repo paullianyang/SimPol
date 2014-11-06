@@ -5,16 +5,16 @@
 >Show a timelapse heatmap of crime in SF as it relates to size and location/staff/budget of current PD compared to optimal.
 
 ####Steps:
-#####Data Collection
+######Data Collection
 > Ideally, Obtain officer count by district, response times by district, and crime by location
 
-####Currently found/available:  
+######Currently found/available:  
 >Salary by employee without location  
 >Crime by location, type and severity  
 >Staffing in aggregate by county
 >Outdated aggregated response times for 2001-2003
 
-####Still need:
+######Still need:
 >Staffing by police district
 >Recent response times
 
