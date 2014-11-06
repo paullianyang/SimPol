@@ -1,133 +1,91 @@
-import numpy as np
 import random
+import numpy as np
+from scipy.spatial.distance import euclidean, cityblock
 
-class KMeans(object):
+class kmeans(object):
+    def __init__(self, k, init='k++', max_iter=-1, verbose = False, distance='euclidean'):
+        '''
+        k: number of clusters
+        init: choose initial metrics randomly or method of kmeans++
+        max_iter: set a maximum number of iterations for convergence. The default is -1, which sets no max
+        verbose: if True, prints the iteration number and the current centers for each iteration
+        distance: sets the distance metric to minimize for
+        random_state: sets a random seed
+        '''
+        distance_methods = {'euclidean': euclidean,
+                            'cityblock': cityblock}
 
-    def __init__(self, points, k, iterations=1000, random_state=None):
         self.k = k
-        self.points = points
-        self.cluster_centers_ = points[self.initialize_centroids()]
-        self.labels_ = self.assign_data_point()
-        self.iterations = iterations
-        if random_state:
-            random.seed(random_state)
+        self.init = init
+        self.max_iter = max_iter
+        self.verbose = verbose
+        self.cluster_centers_ = None
+        self.labels_ = None
+        self.distance = distance_methods[distance]
+        
+    def fit(self, X):
+        '''
+        INPUT: numpy 1-D matrix
+        OUTPUT: none
+        '''
+        if self.init == 'k++':
+            self.kplusplus_init(X)
+        else:
+            self.cluster_centers_ = np.array(random.sample(X, self.k))
+            
+        counter = 0
+        while True:
+            if self.max_iter > 0 or self.verbose:
+                if counter == self.max_iter:
+                    break
+                else:
+                    counter += 1
+            
+            labels = self.predict(X)
 
-    def distance(self, Apoint, Bpoint, metric='euclidean'):
-        '''
-        INPUT: 2 array vector of floats, type of distance metric
-        OUTPUT: a float for the distance between the 2 vectors
-        '''
-        C = Apoint - Bpoint
-        C = C*C
-        dsquared = C.sum()
-        distance = dsquared**0.5
-        return distance
+            new_centers = np.zeros(self.cluster_centers_.shape)
+            for i in np.arange(self.k):
+                new_centers[i] = np.mean(X[labels == i], axis=0)
     
-    def all_distances(self, centroid):
-        '''
-        INPUT: centroid which is a np vector, 
-        OUTPUT: returns list of distances
-        '''
-        centroid_distances = []
-        for point in self.points:
-            centroid_distances.append(self.distance(centroid, point))            
-        return centroid_distances
-    
-    def initialize_centroids(self):
-        '''
-        INPUT: none
-        OUTPUT: list of centroids
-        randomly choose k points
-        '''
-        #make a choice choose k
-        index = np.arange(0, self.points.shape[0], 1)
-        kindexes = random.sample(index, self.k)
-        return kindexes
-    
-    def get_all_centroid_distances(self):
-        '''
-        INPUT: None
-        OUTPUT: list of centroid distances
-        '''
-        listoflist = []
-        for i in xrange(self.k):
-            listoflist.append(self.all_distances(self.cluster_centers_[i]))
-        return listoflist
-    
-    def move_to_center(self):
-        '''
-        INPUT: None
-        OUTPUT: Return new centroids
-        Move centroids to the mean center of the cluster
-        '''
-        for k, pointlist in self.pointlabels.iteritems():
-            self.cluster_centers_[k] = self.get_mean_centroid(pointlist)
-    
-    def assign_data_point(self):
-        '''
-        INPUT: None
-        OUTPUT: dictionary with key = k centroid and value = a list of points that belongs to that centroid
-        Gets distances for each point to every centroid assigns the points to nearest centroid
-        '''
-        listofdistances = self.get_all_centroid_distances()
-        assignments = {}
-        for i in xrange(self.k):
-            assignments[i] = []
-        for i in xrange(len(listofdistances[0])):
-            closestcentroid = -1
-            min_dist = listofdistances[0][i]
-            for j in xrange(len(listofdistances)):
-                if listofdistances[j][i] <= min_dist:
-                    min_dist = listofdistances[j][i]
-                    closestcentroid = j
-            assignments[closestcentroid].append(i)
-        return assignments
-
-    def get_mean_centroid(self, list_of_indexes):
-        '''
-        INPUT: list of points which below to the centroid
-        OUTPUT: a new point representing the centroid
-        '''
-        #get the points from self.points
-        centroidpoints = self.points[list_of_indexes]
-        return centroidpoints.mean(axis=0)
-    
-    def iteration(self):
-        '''
-        INPUT: NONE
-        OUTPUT: NONE
-        iterate through moving to the averege and reassigning the data points
-        '''
-        i = self.iterations
-        while(i>0):
-            oldlabels = self.labels_
-            self.move_to_center()
-            self.labels_ = self.assign_data_point()
-            if oldlabels == self.labels_:
+            if (new_centers == self.cluster_centers_).all():
                 break
-            i = i - 1
     
-    def iterate(self):
-        oldlabels = self.labels_
-        self.move_to_center()
-        self.labels_ = self.assign_data_point()
+            self.cluster_centers_ = new_centers
+            
+            if self.verbose:
+                print 'iter: ', counter
+                print new_centers
+        
+        self.labels_ = labels
+        pass
 
-class KPlusPlus(KMeans):
-    def _dist_from_centers(self):
-        cent = self.mu
-        X = self.X
-        D2 = np.array([min([np.linalg.norm(x-c)**2 for c in cent]) for x in X])
-        self.D2 = D2
- 
-    def _choose_next_center(self):
-        self.probs = self.D2/self.D2.sum()
-        self.cumprobs = self.probs.cumsum()
-        r = random.random()
-        ind = np.where(self.cumprobs >= r)[0][0]
-        return(self.X[ind])
- 
-    def init_centers(self):
-        self.mu = random.sample(self.X, 1)
-        while len(self.mu) < self.K:
-            self._dist_from_centers()
-            self.mu.append(self._choose_next_center())
+    def predict(self, X):
+        '''
+        INPUT: 1-D numpy array
+        OUTPUT: 1-D numpy array
+
+        returns the closest center for each point
+        '''
+        labels = np.zeros(X.shape[0])
+        for i, datapoint in enumerate(X):
+            distances = [self.distance(datapoint, center) for center in self.cluster_centers_]
+            labels[i] = np.argmin(distances)
+        return labels
+
+    def kplusplus_init(self, X):
+        '''
+        INPUT: 1-D numpy array
+        OUTPUT: None
+        
+        picks initial cluster centers weighted against how close they are from another
+        '''
+        self.cluster_centers_ = np.array(random.sample(X, 1))
+        while self.cluster_centers_.shape[0] < self.k:
+            distances = np.array([min([self.distance(datapoint, center) for center in self.cluster_centers_]) for datapoint in X])
+            probs = distances/distances.sum()
+            cumprobs = probs.cumsum()
+            i = np.where(cumprobs >= random.random())[0][0]
+            self.cluster_centers_ = np.row_stack((self.cluster_centers_, X[i]))
+            if self.verbose:
+                print self.cluster_centers_
+        pass
