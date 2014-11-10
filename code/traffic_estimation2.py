@@ -3,7 +3,7 @@ import pickle
 import pandas as pd
 import numpy as np
 import time
-import sqlite3
+import utils
 import math
 
 API_KEY = 'AIzaSyAms5uhYxJnB-X2vkEnufTmuoAgEBDi5xg'
@@ -16,31 +16,6 @@ regions = df['Region'].unique()
 sec_interval = 3600
 sec_delay = 600
 log = '/home/paul/zipfian/capstone-project/data/log'
-
-def insert_data(dbloc, tablename, values):
-    '''
-    INSERT:
-        str sqlite db location,
-        str sqlite tablename,
-        str list of columns,
-        str list of values matching to columns
-    OUTPUT: None
-
-    inserts data into sqlite3 db
-    '''
-
-    conn = sqlite3.connect(dbloc)
-    c = conn.cursor()
-    query = '''
-        INSERT INTO %s
-        VALUES (
-            %s
-        )
-        ''' % (tablename, ','.join(values))
-
-    c.execute(query)
-    conn.commit()
-    conn.close()
 
 def get_params(df):
     label_indices = df['Region'] == region
@@ -86,7 +61,7 @@ if __name__ == '__main__':
                             f.close()
                         else:
                             traffic = traffic_duration - notraffic_duration
-                            insert_data(DATABASE, 'traffic2', [str(cur_utc), origin, destination, str(traffic_distance), str(notraffic_duration), str(traffic)])
+                            utils.insert_data(DATABASE, 'traffic2', [str(cur_utc), origin, destination, str(traffic_distance), str(notraffic_duration), str(traffic)])
                             f = open(log, 'a')
                             f.write('%s: insert region %s\n' % (cur_utc, region))
                             f.close()
