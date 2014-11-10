@@ -81,7 +81,6 @@ if __name__ == '__main__':
                     if distance != -1.0:
                         utils.insert_data(DATABASE, 'traffic2', [str(cur_utc), origin, destination, distance, notraffic_dur, traffic_dur])
                         utils.log('Insert Region: %s' % region)
-            break
         else:
             time.sleep(1)
 
