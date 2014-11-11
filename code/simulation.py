@@ -49,3 +49,16 @@ def update(coptype):
     moves all cops current position into move history
     '''
     utils.insert_tabletotable(DATABASE, coptype+'_now', coptype+'_moves')
+
+def get_crime(df, start_time, end_time, start_date, end_date):
+    '''
+    INPUT: dataframe, start time, end time, start date, end date
+    OUTPUT: filtered dataframe
+
+    Fetches crime that occured within a date interval
+    '''
+    crime_startdate = df['Date'] >= start_date
+    crime_enddate = df['Date'] <= end_date
+    crime_start = df['Time'] >= start_time
+    crime_end = df['Time'] <= start_time
+    return df[crime_startdate & crime_enddate & crime_start & crime_end]
