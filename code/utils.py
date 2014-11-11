@@ -2,7 +2,7 @@ import sqlite3
 
 def insert_data(dbloc, tablename, values):
     '''
-    INSERT:
+    INPUT:
         str sqlite db location,
         str sqlite tablename,
         str list of columns,
@@ -23,6 +23,15 @@ def insert_data(dbloc, tablename, values):
     c.execute(query)
     conn.commit()
     conn.close()
+
+def insert_tabletotable(dbloc, from_table, into_table):
+    '''
+    INPUT: str db location, tablename values are from, tablename values are inserted to
+    OUTPUT: None
+
+    inserts data from one table to another
+    '''
+    pass
 
 def log(text):
     floc = '../data/log'
