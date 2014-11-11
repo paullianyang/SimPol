@@ -31,7 +31,40 @@ def insert_tabletotable(dbloc, from_table, into_table):
 
     inserts data from one table to another
     '''
-    pass
+    conn = sqlite3.connect(dbloc)
+    c = conn.cursor()
+    query = '''
+        INSERT INTO %s
+        SELECT * FROM %s
+        ''' % (from_table, into_table)
+    c.execute(query)
+    conn.commit()
+    conn.close()
+
+def truncate_table(dbloc, tablename):
+    '''
+    INPUT: str db location, tablename to truncate
+    OUTPUT: None
+
+    deletes all data from one table
+    '''
+    conn = sqlite3.connect(dbloc)
+    c = conn.cursor()
+    query = 'DELETE FROM %s' % tablename
+    c.execute(query)
+    conn.commit()
+    conn.close()
+
+def execute(dbloc, query):
+    '''
+    INPUT: query to execute
+    OUTPUTL None
+    '''
+    conn = sqlite3.connect(dbloc)
+    c = conn.cursor()
+    c.execute(query)
+    conn.commit()
+    conn.close()
 
 def log(text):
     floc = '../data/log'
