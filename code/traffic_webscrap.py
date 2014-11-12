@@ -1,3 +1,7 @@
+'''
+methods to webscrap gmaps traffic data
+and store it into a sqlite database
+'''
 import requests
 import pickle
 import pandas as pd
@@ -45,7 +49,8 @@ def scrape_gmaps(cur_utc, origin, destination):
     if r.status_code == 200:
         soup = BeautifulSoup(r.text, 'html.parser')
         for line in soup.find_all('span'):
-            cleaned_line = str(line).replace('<span>', '').replace('</span>', '').replace('In current traffic:', '').replace(' ', '')
+            cleaned_line = str(line).replace('<span>', '').replace('</span>', '').\
+                replace('In current traffic:', '').replace(' ', '')
             count -= 1
             if count == 2:
                 distance = "'" + cleaned_line + "'"
@@ -60,29 +65,48 @@ def scrape_gmaps(cur_utc, origin, destination):
             if 'Hideoptions' in cleaned_line:
                 count = 3
     else:
-        error = '%s ERROR: scrape_gmaps with status code %s\norigin - %s\ndestination - %s' %(cur_utc, r.status_code, origin, destination)
+        error = '%s ERROR: scrape_gmaps with status code %s\norigin - %s\ndestination - %s'\
+                % (cur_utc, r.status_code, origin, destination)
         utils.log(error)
     return distance, notraffic_dur, traffic_dur
 
 
-if __name__ == '__main__':
+def run():
+    '''
+    Randomly choose crime coordinates from SF split into
+    50 equidistant regions and find traffic information
+    by webscrapping the gmaps site.
+    *Note* Ip gets halted at around 900 consecutive requests
+    I'm going to try a very conversative number of 200 requests
+    every hour (4 samples from each region)
+    '''
     DATABASE = '../data/traffic.db'
-
     kmean = pickle.load(open('../data/split_sf.pkl', 'rb'))
     df = pd.read_csv('../data/sfpd_incident_2014.csv')
     df['Region'] = kmean.predict(df[['X', 'Y']])
     regions = df['Region'].unique()
-    sec_interval = 3600
-    sec_delay = 600
+    # run every 10 minutes pass every hour
+    sec_interval = 3600  # one hour
+    sec_delay = 600  # 10 minutes
+    # number of samples to take
+    sample_size = 4
+
     while True:
         if (math.floor(time.time()) - sec_delay) % sec_interval == 0:
             for region in regions:
-                for i in range(4):
+                for i in range(sample_size):
                     cur_utc, origin, destination = get_params(df, region)
-                    distance, notraffic_dur, traffic_dur = scrape_gmaps(cur_utc, origin, destination)
+                    distance, notraffic_dur, traffic_dur = \
+                        scrape_gmaps(cur_utc, origin, destination)
                     if distance != -1.0:
-                        utils.insert_data(DATABASE, 'traffic2', [str(cur_utc), origin, destination, distance, notraffic_dur, traffic_dur])
+                        utils.insert_data(DATABASE, 'traffic2',
+                                          [str(cur_utc),
+                                           origin, destination,
+                                           distance,
+                                           notraffic_dur, traffic_dur])
                         utils.log('Insert Region: %s' % region)
         else:
             time.sleep(1)
 
+if __name__ == '__main__':
+    run()

@@ -1,4 +1,7 @@
 '''
+KMeans allowing custom distance functions.
+Used for driving distance
+
 Come back to this: Perhaps calculate a distance matrix
 and then fetch the distance from the matrix
 '''
@@ -21,12 +24,15 @@ def driving_distance(from_coord, to_coord):
 
 
 class kmeans(object):
-    def __init__(self, k, init='k++', max_iter=-1, verbose = False, distance='euclidean'):
+    def __init__(self, k, init='k++', max_iter=-1,
+                 verbose=False, distance='euclidean'):
         '''
         k: number of clusters
         init: choose initial metrics randomly or method of kmeans++
-        max_iter: set a maximum number of iterations for convergence. The default is -1, which sets no max
-        verbose: if True, prints the iteration number and the current centers for each iteration
+        max_iter: set a maximum number of iterations for convergence.
+                  The default is -1, which sets no max
+        verbose: if True, prints the iteration number and
+                 the current centers for each iteration
         distance: sets the distance metric to minimize for
         random_state: sets a random seed
         '''
@@ -80,7 +86,8 @@ class kmeans(object):
         '''
         labels = np.zeros(X.shape[0])
         for i, datapoint in enumerate(X):
-            distances = [self.distance(datapoint, center) for center in self.cluster_centers_]
+            distances = [self.distance(datapoint, center)
+                         for center in self.cluster_centers_]
             labels[i] = np.argmin(distances)
         return labels
 
@@ -89,11 +96,14 @@ class kmeans(object):
         INPUT: 1-D numpy array
         OUTPUT: None
 
-        picks initial cluster centers weighted against how close they are from another
+        picks initial cluster centers weighted against
+        how close they are from another
         '''
         self.cluster_centers_ = np.array(random.sample(X, 1))
         while self.cluster_centers_.shape[0] < self.k:
-            distances = np.array([min([self.distance(datapoint, center) for center in self.cluster_centers_]) for datapoint in X])
+            distances = np.array([min([self.distance(datapoint, center)
+                                 for center in self.cluster_centers_])
+                                 for datapoint in X])
             probs = distances/distances.sum()
             cumprobs = probs.cumsum()
             i = np.where(cumprobs >= random.random())[0][0]
