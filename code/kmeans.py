@@ -1,6 +1,19 @@
 import random
 import numpy as np
 from scipy.spatial.distance import euclidean, cityblock
+import utils
+
+
+def driving_distance(from_coord, to_coord):
+    '''
+    INPUT: lat/long tuple identifying origin,
+           lat/long tuple identifying destination
+    OUTPUT: distance in meters
+    '''
+    from_lat, from_long = from_coord
+    to_lat, to_long = to_coord
+    return utils.OSRM(from_lat, from_long, to_lat, to_long).distance()
+
 
 class kmeans(object):
     def __init__(self, k, init='k++', max_iter=-1, verbose = False, distance='euclidean'):
@@ -13,7 +26,8 @@ class kmeans(object):
         random_state: sets a random seed
         '''
         distance_methods = {'euclidean': euclidean,
-                            'cityblock': cityblock}
+                            'cityblock': cityblock,
+                            'driving': driving_distance}
 
         self.k = k
         self.init = init
@@ -22,7 +36,7 @@ class kmeans(object):
         self.cluster_centers_ = None
         self.labels_ = None
         self.distance = distance_methods[distance]
-        
+
     def fit(self, X):
         '''
         INPUT: numpy 1-D matrix
@@ -32,7 +46,6 @@ class kmeans(object):
             self.kplusplus_init(X)
         else:
             self.cluster_centers_ = np.array(random.sample(X, self.k))
-            
         counter = 0
         while True:
             if self.max_iter > 0 or self.verbose:
@@ -40,24 +53,18 @@ class kmeans(object):
                     break
                 else:
                     counter += 1
-            
             labels = self.predict(X)
 
             new_centers = np.zeros(self.cluster_centers_.shape)
             for i in np.arange(self.k):
                 new_centers[i] = np.mean(X[labels == i], axis=0)
-    
             if (new_centers == self.cluster_centers_).all():
                 break
-    
             self.cluster_centers_ = new_centers
-            
             if self.verbose:
                 print 'iter: ', counter
                 print new_centers
-        
         self.labels_ = labels
-        pass
 
     def predict(self, X):
         '''
@@ -76,7 +83,7 @@ class kmeans(object):
         '''
         INPUT: 1-D numpy array
         OUTPUT: None
-        
+
         picks initial cluster centers weighted against how close they are from another
         '''
         self.cluster_centers_ = np.array(random.sample(X, 1))
@@ -88,4 +95,3 @@ class kmeans(object):
             self.cluster_centers_ = np.row_stack((self.cluster_centers_, X[i]))
             if self.verbose:
                 print self.cluster_centers_
-        pass
