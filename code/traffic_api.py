@@ -10,10 +10,11 @@ API_KEY = 'AIzaSyAms5uhYxJnB-X2vkEnufTmuoAgEBDi5xg'
 
 kmean = pickle.load(open('../data/split_sf.pkl', 'rb'))
 df = pd.read_csv('../data/sfpd_incident_2014.csv')
-df['Region'] = kmean.predict(df[['X','Y']])
+df['Region'] = kmean.predict(df[['X', 'Y']])
 regions = df['Region'].unique()
 sec_interval = 3600
 sec_delay = 600
+
 
 def insert_data(ut_time, origin, destination, distance, duration):
     '''
@@ -27,10 +28,10 @@ def insert_data(ut_time, origin, destination, distance, duration):
 
     inserts data into table traffic in traffic.db
     '''
-    conn = sqlite3.connect('../data/traffic.db')    
+    conn = sqlite3.connect('../data/traffic.db')
     origin_lat, origin_long = origin.split(',')
     dest_lat, dest_long = destination.split(',')
-    
+
     c = conn.cursor()
     c.execute('''
         INSERT INTO traffic
@@ -43,9 +44,8 @@ def insert_data(ut_time, origin, destination, distance, duration):
             %s,
             %s
         )
-        ''' % (ut_time, origin_lat, origin_long, dest_lat, dest_long, distance, duration)
-    )
-    
+        ''' % (ut_time, origin_lat, origin_long, dest_lat, dest_long, distance, duration))
+
     conn.commit()
     conn.close()
 
@@ -68,5 +68,3 @@ if __name__ == '__main__':
                     print 'inserted %s at time %s' % (region, cur_utc)
         else:
             time.sleep(1)
-
-

@@ -1,4 +1,8 @@
+'''
+creates sqlite databases and tables
+'''
 import sqlite3
+
 
 def trafficdb():
     conn = sqlite3.connect('../data/traffic.db')
@@ -18,6 +22,7 @@ def trafficdb():
     ''')
     conn.commit()
     conn.close()
+
 
 def simulationdb():
     conn = sqlite3.connect('../data/simulation.db')
