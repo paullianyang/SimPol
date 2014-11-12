@@ -1,3 +1,7 @@
+'''
+utility methods to manipulate
+and fetch data
+'''
 import sqlite3
 import requests
 import keys
@@ -93,8 +97,8 @@ class GMaps_Matrix(object):
         self.to_long = to_long
         self.r = self.get_requests()
         if self.r.json()['status'] != 'OK':
-            #sometimes fails with unknown error
-            #lets try it a second time
+            # sometimes fails with unknown error
+            # lets try it a second time
             print self.r.jsion()['status']
             print self.from_lat, self.from_long, self.to_lat, self.to_long
             self.r = self.get_requests()
@@ -143,11 +147,11 @@ class OSRM(object):
             self.to_lat, self.to_long = \
                 self.find_nearest(self.to_lat, self.to_long)
             status, r = self.get_request()
-        #Certain Coordinates don't exist in OSRM
-        #Fallback to GMaps API when this happens
+        # Certain Coordinates don't exist in OSRM
+        # Fallback to GMaps API when this happens
         if status == 'Cannot find route between points':
             gmaps = GMaps_Matrix(self.from_lat, self.from_long,
-                                       self.to_lat, self.to_long)
+                                 self.to_lat, self.to_long)
             print 'GMAPS'
             return gmaps, 'gmaps'
         return r, 'osrm'
