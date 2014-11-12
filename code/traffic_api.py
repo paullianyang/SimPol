@@ -5,8 +5,8 @@ import numpy as np
 import time
 import sqlite3
 import math
+import keys
 
-API_KEY = 'AIzaSyAms5uhYxJnB-X2vkEnufTmuoAgEBDi5xg'
 
 kmean = pickle.load(open('../data/split_sf.pkl', 'rb'))
 df = pd.read_csv('../data/sfpd_incident_2014.csv')
@@ -60,7 +60,7 @@ if __name__ == '__main__':
                     samp_coord = np.random.choice(np.arange(coord.shape[0]), size=2)
                     origin = str(coord[samp_coord[0]][0]) + ',' + str(coord[samp_coord[0]][1])
                     destination = str(coord[samp_coord[1]][0]) + ',' + str(coord[samp_coord[1]][1])
-                    request_url = 'https://maps.googleapis.com/maps/api/distancematrix/json?origins=%s&destinations=%s&key=%s&departure_time=%d' % (origin, destination, API_KEY, cur_utc)
+                    request_url = 'https://maps.googleapis.com/maps/api/distancematrix/json?origins=%s&destinations=%s&key=%s&departure_time=%d' % (origin, destination, keys.gmaps_apikey(), cur_utc)
                     r = requests.get(request_url)
                     distance = r.json()['rows'][0]['elements'][0]['distance']['value']
                     duration = r.json()['rows'][0]['elements'][0]['duration']['value']
