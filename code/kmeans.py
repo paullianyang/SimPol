@@ -1,3 +1,8 @@
+'''
+Come back to this: Perhaps calculate a distance matrix
+and then fetch the distance from the matrix
+'''
+from __future__ import division
 import random
 import numpy as np
 from scipy.spatial.distance import euclidean, cityblock

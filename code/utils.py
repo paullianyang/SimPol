@@ -101,6 +101,7 @@ class GMaps_Matrix(object):
         return requests.get(url)
 
     def distance(self):
+        print self.r.json()
         return self.r.json()['rows'][0]['elements'][0]['distance']['value']
 
     def duration(self):
