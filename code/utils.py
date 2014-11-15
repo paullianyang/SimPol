@@ -96,12 +96,16 @@ class GMaps_Matrix(object):
         self.to_lat = to_lat
         self.to_long = to_long
         self.r = self.get_requests()
-        if self.r.json()['status'] != 'OK':
-            # sometimes fails with unknown error
-            # lets try it a second time
-            print self.r.jsion()['status']
-            print self.from_lat, self.from_long, self.to_lat, self.to_long
-            self.r = self.get_requests()
+        try:
+            if self.r.json()['status'] != 'OK':
+                # sometimes fails with unknown error
+                # lets try it a second time
+                print self.r.jsion()['status']
+                print self.from_lat, self.from_long, self.to_lat, self.to_long
+                self.r = self.get_requests()
+        except ValueError:
+            print self.r
+            print self.fromt_lat, self.from_long, self.to_lat, self.to_long
 
     def get_requests(self):
         url = 'https://maps.googleapis.com/maps/api/distancematrix/json?origins=%f,%f&destinations=%f,%f&key=%s' \
@@ -152,7 +156,6 @@ class OSRM(object):
         if status == 'Cannot find route between points':
             gmaps = GMaps_Matrix(self.from_lat, self.from_long,
                                  self.to_lat, self.to_long)
-            print 'GMAPS'
             return gmaps, 'gmaps'
         return r, 'osrm'
 

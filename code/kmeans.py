@@ -89,6 +89,9 @@ class kmeans(object):
             distances = [self.distance(datapoint, center)
                          for center in self.cluster_centers_]
             labels[i] = np.argmin(distances)
+            if self.verbose:
+                if i % 100 == 0:
+                    print '%.2f%%' % (i/X.shape[0]*100)
         return labels
 
     def kplusplus_init(self, X):
