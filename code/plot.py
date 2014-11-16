@@ -30,13 +30,13 @@ def pkmean(kmean, X, save_loc=None):
         x = X[:, 0][label_indices]
         y = X[:, 1][label_indices]
 
-        plt.plot(x, y, 'o',
+        plt.plot(x, y, '.',
                  markerfacecolor=col,
                  alpha=0.1)
         plt.axis('off')
 
     # plot cluster centers in black
-    plt.plot(center_x, center_y, 'o',
+    plt.plot(center_x, center_y, '.',
              markerfacecolor='k')
 
     # add labels to centers
