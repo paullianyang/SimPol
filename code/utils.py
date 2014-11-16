@@ -72,6 +72,24 @@ class sqlite(object):
         self.c.execute(query)
         self.conn.commit()
 
+    def selecttocsv(self, fname, query, headers=False):
+        '''
+        INPUT: filename to save to,
+               query string
+               list of header names (optional)
+        OUTPUT: None
+
+        Saves a query to csv
+        '''
+        results = self.c.execute(query)
+        with open(fname, 'wb') as f:
+            if headers:
+                f.write(','.join(headers))
+                f.write('\n')
+            for r in results:
+                f.write(','.join(r))
+                f.write('\n')
+
     def close(self):
         self.conn.close()
 
