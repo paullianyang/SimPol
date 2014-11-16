@@ -27,6 +27,13 @@ def get_params(df, region):
     origin = str(coord[samp_coord[0]][0]) + ',' + str(coord[samp_coord[0]][1])
     destination = str(coord[samp_coord[1]][0]) + ',' + \
         str(coord[samp_coord[1]][1])
+    # avoid sampling same crime locations
+    while origin == destination:
+        samp_coord = np.random.choice(np.arange(coord.shape[0]), size=2)
+        origin = str(coord[samp_coord[0]][0]) + ',' + \
+            str(coord[samp_coord[0]][1])
+        destination = str(coord[samp_coord[1]][0]) + ',' + \
+            str(coord[samp_coord[1]][1])
     return cur_utc, origin, destination
 
 
