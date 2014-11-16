@@ -5,7 +5,7 @@ to determine the optimal patrol strategy
 '''
 import numpy as np
 import utils
-
+import split_city
 DATABASE = '../data/simulation.db'
 
 
@@ -20,7 +20,9 @@ class SimPol(object):
         Simulates cop patrol given kmean cluster
         '''
         self.df = df
+        self.df['split_region'] = -1
         self.cops_num = None
+        self.crime_center = None
         self.kmean = kmean
         self.min_y = None
         self.max_y = None
@@ -31,13 +33,16 @@ class SimPol(object):
 
     def initiate_region(self, region):
         self.region = region
-        label_indices = self.df['Region'] == region
+        self.center = self.kmean.cluster_centers_[self.region]
+        label_indices = self.df['Region'] == self.region
         self.min_y = self.df[label_indices]['Y'].min()
         self.max_y = self.df[label_indices]['Y'].max()
         self.min_x = self.df[label_indices]['X'].min()
         self.max_x = self.df[label_indices]['X'].max()
+        self.highest_crime()
 
-    def initiate_cops(self):
+    def initiate_cops(self, cops_num):
+        self.cops_num = cops_num
         for cop in range(self.cops_num):
             samp_y, samp_x = self.random_coord()
             utils.insert_data(DATABASE, 'cops',
@@ -65,7 +70,20 @@ class SimPol(object):
         return self.center
 
     def patrol_crime(self):
-        pass
+        return self.crime_center
+
+    def highest_crime(self):
+        # split region into 50
+        # and find the most probable
+        # region for crime
+        # Use KDE on next iteration
+        label_indices = self.df['Region'] == self.region
+        X = self.df[label_indices][['X', 'Y']]
+        kmeans = split_city.split_city(X)
+        self.df[label_indices]['split_regions'] = kmeans.labels_
+        most_crime = self.df[label_indices]['split_regions'].value_counts(). \
+            index[0]
+        self.crime_center = kmeans.cluster_centers_[most_crime]
 
     def move_cop(self, coptype, values):
         '''
