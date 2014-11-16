@@ -112,8 +112,8 @@ def run():
                                          origin, destination,
                                          distance,
                                          notraffic_dur, traffic_dur])
-                        sql.close()
                         utils.log('Insert Region: %s' % region)
+            sql.close()
         else:
             time.sleep(1)
 
