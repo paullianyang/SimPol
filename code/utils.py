@@ -7,76 +7,73 @@ import requests
 import keys
 
 
-def insert_data(dbloc, tablename, values):
-    '''
-    INPUT:
-        str sqlite db location,
-        str sqlite tablename,
-        str list of columns,
-        str list of values matching to columns
-    OUTPUT: None
+class sqlite(object):
+    def __init__(self, dbloc):
+        '''
+        INPUT: database location'
+        OUTPUT: None
 
-    inserts data into sqlite3 db
-    '''
-    conn = sqlite3.connect(dbloc)
-    c = conn.cursor()
-    query = '''
-        INSERT INTO %s
-        VALUES (
-            %s
-        )
-        ''' % (tablename, ','.join(values))
+        Establish a connction to sqlite3 db
+        '''
+        self.conn = sqlite3.connect(dbloc)
+        self.c = self.conn.cursor()
 
-    c.execute(query)
-    conn.commit()
-    conn.close()
+    def insert_data(self, tablename, values):
+        '''
+        INPUT:
+            str sqlite tablename,
+            str list of values matching to table field order
+        OUTPUT: None
 
+        inserts data into sqlite3 db
+        '''
+        query = '''
+            INSERT INTO %s
+            VALUES (
+                %s
+            )
+            ''' % (tablename, ','.join(values))
 
-def insert_tabletotable(dbloc, from_table, into_table):
-    '''
-    INPUT: str db location,
-           tablename values are from,
-           tablename values are inserted to
-    OUTPUT: None
+        self.c.execute(query)
+        self.conn.commit()
 
-    inserts data from one table to another
-    '''
-    conn = sqlite3.connect(dbloc)
-    c = conn.cursor()
-    query = '''
-        INSERT INTO %s
-        SELECT * FROM %s
-        ''' % (from_table, into_table)
-    c.execute(query)
-    conn.commit()
-    conn.close()
+    def insert_tabletotable(self, from_table, into_table):
+        '''
+        INPUT: str db location,
+               tablename values are from,
+               tablename values are inserted to
+        OUTPUT: None
 
+        inserts data from one table to another
+        '''
+        query = '''
+            INSERT INTO %s
+            SELECT * FROM %s
+            ''' % (from_table, into_table)
+        self.c.execute(query)
+        self.conn.commit()
 
-def truncate_table(dbloc, tablename):
-    '''
-    INPUT: str db location, tablename to truncate
-    OUTPUT: None
+    def truncate_table(self, tablename):
+        '''
+        INPUT: str db location, tablename to truncate
+        OUTPUT: None
 
-    deletes all data from one table
-    '''
-    conn = sqlite3.connect(dbloc)
-    c = conn.cursor()
-    query = 'DELETE FROM %s' % tablename
-    c.execute(query)
-    conn.commit()
-    conn.close()
+        deletes all data from one table
+        '''
+        query = 'DELETE FROM %s' % tablename
+        self.c.execute(query)
+        self.conn.commit()
 
+    def execute(self, query):
+        '''
+        INPUT: query to execute
+        OUTPUTL None
+        '''
+        self.c.execute(query)
+        self.conn.commit()
 
-def execute(dbloc, query):
-    '''
-    INPUT: query to execute
-    OUTPUTL None
-    '''
-    conn = sqlite3.connect(dbloc)
-    c = conn.cursor()
-    c.execute(query)
-    conn.commit()
-    conn.close()
+    def close(self):
+        self.conn.close()
 
 
 class GMaps_Matrix(object):
