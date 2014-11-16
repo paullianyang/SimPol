@@ -100,18 +100,20 @@ def run():
 
     while True:
         if (math.floor(time.time()) - sec_delay) % sec_interval == 0:
+            sql = utils.sqlite(DATABASE)
             for region in regions:
                 for i in range(sample_size):
                     cur_utc, origin, destination = get_params(df, region)
                     distance, notraffic_dur, traffic_dur = \
                         scrape_gmaps(cur_utc, origin, destination)
                     if distance != -1.0:
-                        utils.insert_data(DATABASE, 'traffic2',
-                                          [str(cur_utc),
-                                           origin, destination,
-                                           distance,
-                                           notraffic_dur, traffic_dur])
+                        sql.insert_data('traffic2',
+                                        [str(cur_utc),
+                                         origin, destination,
+                                         distance,
+                                         notraffic_dur, traffic_dur])
                         utils.log('Insert Region: %s' % region)
+            sql.close()
         else:
             time.sleep(1)
 
