@@ -107,7 +107,7 @@ def run():
                     distance, notraffic_dur, traffic_dur = \
                         scrape_gmaps(cur_utc, origin, destination)
                     if distance != -1.0:
-                        sql.insert_data(DATABASE, 'traffic2',
+                        sql.insert_data('traffic2',
                                         [str(cur_utc),
                                          origin, destination,
                                          distance,
