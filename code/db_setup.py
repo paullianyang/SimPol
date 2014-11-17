@@ -41,7 +41,9 @@ def simulationdb():
             id INT,
             utc INT,
             lat REAL,
-            long REAL
+            long REAL,
+            end_time INT,
+            status TEXT
         )
     ''')
     c.execute('''
@@ -50,7 +52,9 @@ def simulationdb():
             id INT,
             utc INT,
             lat REAL,
-            long REAL
+            long REAL,
+            end_time INT,
+            status TEXT
         )
     ''')
     c.execute('''
@@ -59,7 +63,9 @@ def simulationdb():
             id INT,
             utc INT,
             lat REAL,
-            long REAL
+            long REAL,
+            end_time INT,
+            status TEXT
         )
     ''')
     c.execute('''
@@ -68,7 +74,9 @@ def simulationdb():
             id INT,
             utc INT,
             lat REAL,
-            long REAL
+            long REAL,
+            end_time INT,
+            status TEXT
         )
     ''')
     c.execute('''
@@ -78,7 +86,7 @@ def simulationdb():
             utc INT,
             lat REAL,
             long REAL,
-            start_time INT,
+            end_time INT,
             status TEXT
         )
     ''')
@@ -89,7 +97,7 @@ def simulationdb():
             utc INT,
             lat REAL,
             long REAL,
-            start_time INT,
+            end_time INT,
             status TEXT
         )
     ''')
@@ -100,7 +108,7 @@ def simulationdb():
             utc INT,
             lat REAL,
             long REAL,
-            start_time INT,
+            end_time INT,
             status TEXT
         )
     ''')
@@ -111,7 +119,7 @@ def simulationdb():
             utc INT,
             lat REAL,
             long REAL,
-            start_time INT,
+            end_time INT,
             status TEXT
         )
     ''')
