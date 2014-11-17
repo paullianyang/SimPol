@@ -6,10 +6,11 @@ import numpy as np
 plt.style.use('ggplot')
 
 
-def pkmean(kmean, X, save_loc=None):
+def pkmean(kmean, X, label_centers=True, save_loc=False):
     '''
     INPUT: fitted kmean model,
            1-dimensional array of x,y tuples,
+           True/False to include centroid labels,
            save location
     OUTPUT: None
 
@@ -22,8 +23,6 @@ def pkmean(kmean, X, save_loc=None):
     centers = kmean.cluster_centers_
     colors = plt.cm.Spectral(np.linspace(0, 1, len(centers)))
     labels = np.arange(len(centers))
-    center_x = centers[:, 0]
-    center_y = centers[:, 1]
     # plot and color points by cluster
     for label, col in zip(labels, colors):
         label_indices = np.where(kmean.labels_ == label)
@@ -35,18 +34,22 @@ def pkmean(kmean, X, save_loc=None):
                  alpha=0.1)
         plt.axis('off')
 
-    # plot cluster centers in black
-    plt.plot(center_x, center_y, '.',
-             markerfacecolor='k')
-
     # add labels to centers
-    for label, x, y in zip(labels, center_x, center_y):
-        plt.annotate(
-            label,
-            xy=(x, y), xytext = (-20, 20),
-            textcoords = 'offset points', ha = 'right', va = 'bottom',
-            bbox = dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
-            arrowprops = dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
+    if label_centers:
+        center_x = centers[:, 0]
+        center_y = centers[:, 1]
+        # plot cluster centers in black
+        plt.plot(center_x, center_y, '.',
+                 markerfacecolor='k')
+
+        for label, x, y in zip(labels, center_x, center_y):
+            plt.annotate(
+                label,
+                xy=(x, y), xytext = (-20, 20),
+                textcoords = 'offset points', ha = 'right', va = 'bottom',
+                bbox = dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
+                arrowprops = dict(arrowstyle='->',
+                                  connectionstyle='arc3,rad=0'))
 
     if save_loc:
         plt.savefig(save_loc)

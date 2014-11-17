@@ -32,8 +32,7 @@ def simulationdb():
         (
             id INT,
             init_lat REAL,
-            init_long REAL,
-            status TEXT
+            init_long REAL
         )
     ''')
     c.execute('''
@@ -42,7 +41,9 @@ def simulationdb():
             id INT,
             utc INT,
             lat REAL,
-            long REAL
+            long REAL,
+            end_time INT,
+            status TEXT
         )
     ''')
     c.execute('''
@@ -51,7 +52,9 @@ def simulationdb():
             id INT,
             utc INT,
             lat REAL,
-            long REAL
+            long REAL,
+            end_time INT,
+            status TEXT
         )
     ''')
     c.execute('''
@@ -60,7 +63,9 @@ def simulationdb():
             id INT,
             utc INT,
             lat REAL,
-            long REAL
+            long REAL,
+            end_time INT,
+            status TEXT
         )
     ''')
     c.execute('''
@@ -69,7 +74,9 @@ def simulationdb():
             id INT,
             utc INT,
             lat REAL,
-            long REAL
+            long REAL,
+            end_time INT,
+            status TEXT
         )
     ''')
     c.execute('''
@@ -78,7 +85,9 @@ def simulationdb():
             id INT,
             utc INT,
             lat REAL,
-            long REAL
+            long REAL,
+            end_time INT,
+            status TEXT
         )
     ''')
     c.execute('''
@@ -87,7 +96,9 @@ def simulationdb():
             id INT,
             utc INT,
             lat REAL,
-            long REAL
+            long REAL,
+            end_time INT,
+            status TEXT
         )
     ''')
     c.execute('''
@@ -96,7 +107,9 @@ def simulationdb():
             id INT,
             utc INT,
             lat REAL,
-            long REAL
+            long REAL,
+            end_time INT,
+            status TEXT
         )
     ''')
     c.execute('''
@@ -105,7 +118,37 @@ def simulationdb():
             id INT,
             utc INT,
             lat REAL,
-            long REAL
+            long REAL,
+            end_time INT,
+            status TEXT
+        )
+    ''')
+    c.execute('''
+        CREATE TABLE rcop_response
+        (
+            id INT,
+            response_time INT
+        )
+    ''')
+    c.execute('''
+        CREATE TABLE lcop_response
+        (
+            id INT,
+            response_time INT
+        )
+    ''')
+    c.execute('''
+        CREATE TABLE ccop_response
+        (
+            id INT,
+            response_time INT
+        )
+    ''')
+    c.execute('''
+        CREATE TABLE hcop_response
+        (
+            id INT,
+            response_time INT
         )
     ''')
     conn.commit()
