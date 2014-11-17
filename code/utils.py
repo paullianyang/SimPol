@@ -5,6 +5,7 @@ and fetch data
 import sqlite3
 import requests
 import keys
+import calendar
 
 
 class sqlite(object):
@@ -212,6 +213,16 @@ class OSRM(object):
         r = requests.get(url)
         coord = r.json()['mapped_coordinate']
         return coord[0], coord[1]
+
+
+def datetime_to_unixtime(dt):
+    '''
+    INPUT: datetime object
+    OUTPUT: unixtime
+
+    converts datetime to number of seconds since 1970
+    '''
+    return calendar.timegm(dt.utctimetuple())
 
 
 def log(text):
