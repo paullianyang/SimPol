@@ -34,7 +34,6 @@ class sqlite(object):
                 %s
             )
             ''' % (tablename, ','.join(values))
-
         self.c.execute(query)
         self.conn.commit()
 

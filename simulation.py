@@ -5,13 +5,13 @@ to determine the optimal patrol strategy
 '''
 from __future__ import division
 import numpy as np
-import utils
-import split_city
+from code import utils
+from code import split_city
 from datetime import datetime
 import pickle
 import pandas as pd
-import kmeans
-DATABASE = '../data/simulation.db'
+from code import kmeans
+DATABASE = 'data/simulation.db'
 
 
 class SimPol(object):
@@ -40,11 +40,16 @@ class SimPol(object):
         self.region = None
         self.response_time = None
         self.sql = utils.sqlite(DATABASE)
+        self.sql.truncate_table('cops')
+        self.tables = ['_moves', '_response', '_now']
+        for cop in self.cop_types:
+            for table in self.tables:
+                self.sql.truncate_table(cop+table)
 
     def initiate_region(self, region):
         self.region = region
         self.center = self.kmean.cluster_centers_[self.region]
-        label_indices = self.df['Region'] == self.region
+        label_indices = self.df['Regions'] == self.region
         self.min_y = self.df[label_indices]['Y'].min()
         self.max_y = self.df[label_indices]['Y'].max()
         self.min_x = self.df[label_indices]['X'].min()
@@ -64,15 +69,23 @@ class SimPol(object):
         self.response_time = response_time*60
         for cop in range(self.cops_num):
             samp_y, samp_x = self.random_coord()
-            self.sql.insert_data('cops', [cop, samp_y, samp_x])
+            self.sql.insert_data('cops', [str(cop), str(samp_y), str(samp_x)])
             self.sql.insert_data('rcop_now',
-                                 [cop, 0, samp_y, samp_x, -1, 'available'])
+                                 [str(cop), '0',
+                                  str(samp_y), str(samp_x),
+                                  '-1', "'available'"])
             self.sql.insert_data('lcop_now',
-                                 [cop, 0, samp_y, samp_x, -1, 'available'])
+                                 [str(cop), '0',
+                                  str(samp_y), str(samp_x),
+                                  '-1', "'available'"])
             self.sql.insert_data('ccop_now',
-                                 [cop, 0, samp_y, samp_x, -1, 'available'])
+                                 [str(cop), '0',
+                                  str(samp_y), str(samp_x),
+                                  '-1', "'available'"])
             self.sql.insert_data('hcop_now',
-                                 [cop, 0, samp_y, samp_x, -1, 'available'])
+                                 [str(cop), '0',
+                                  str(samp_y), str(samp_x),
+                                  '-1', "'available'"])
 
     def random_coord(self):
         while True:
@@ -80,7 +93,8 @@ class SimPol(object):
                       ((self.max_y-self.min_y)/self.min_y))*self.min_y
             samp_x = (1+np.random.rand() *
                       ((self.max_x-self.min_x)/self.min_x))*self.min_x
-            if self.kmean.predict([samp_x, samp_y]) == self.region:
+            X = np.array([[samp_y, samp_x]])
+            if self.kmean.predict(X) == self.region:
                 break
         return samp_y, samp_x
 
@@ -99,10 +113,10 @@ class SimPol(object):
         # and find the most probable
         # region for crime
         # Use KDE on next iteration
-        label_indices = self.df['Region'] == self.region
+        label_indices = self.df['Regions'] == self.region
         X = self.df[label_indices][['Y', 'X']]
         km = split_city.split_city(X)
-        self.df[label_indices]['split_regions'] = km.labels_
+        self.df.loc[label_indices, 'split_regions'] = km.labels_
         most_crime = self.df[label_indices]['split_regions'].value_counts(). \
             index[0]
         self.crime_center = km.cluster_centers_[most_crime]
@@ -144,14 +158,12 @@ class SimPol(object):
 
         preprocessing for simulation
         '''
-        df['split_region'] = -1
+        df['split_regions'] = -1
         df['unixtime'] = df['Date'] + ' ' + df['Time']
         df['unixtime'] = df['unixtime']. \
             apply(lambda x: datetime.strptime(x, '%m/%d/%Y %H:%M'))
         df['unixtime'] = df['unixtime']. \
             apply(lambda x: utils.datetime_to_unixtime(x))
-        df['X'] = df['X'].apply(lambda x: str(x))
-        df['Y'] = df['Y'].apply(lambda x: str(x))
         return df
 
     def get_crime(self, start_time, end_time):
@@ -161,7 +173,7 @@ class SimPol(object):
 
         Fetches crime that occured within a date interval
         '''
-        label_indices = self.df['Region'] = self.region
+        label_indices = self.df['Regions'] = self.region
         crime_start = self.df['unixtime'] >= start_time
         crime_end = self.df['unixtime'] < start_time
         return self.df[crime_start & crime_end & label_indices]
@@ -176,7 +188,7 @@ class SimPol(object):
         start_date = datetime.strptime(date_string, '%Y-%m-%d')
         start_utc = utils.datetime_to_unixtime(start_date)
         interval = 60  # each run is 60 seconds
-        iterations = (60*60*24)/interval
+        iterations = int((60*60*24)/interval)
         for i in range(iterations):
             end_utc = start_utc + interval
             crime_df = self.get_crime(start_time=start_utc,
@@ -256,7 +268,7 @@ class SimPol(object):
                               cop_lat=cop_lat,
                               cop_long=cop_long,
                               end_time=-1,
-                              status='available')
+                              status="'available'")
 
     def find_location(self, from_lat, from_long, to_lat, to_long, interval):
         '''
@@ -314,32 +326,38 @@ class SimPol(object):
 
         assigns cops to crime for each cop type
         '''
-        crime_df['crime_coord'] = crime_df['Y'] + ',' + crime_df['X']
+        print crime_df.info()
+        crime_df['crime_coord'] = crime_df['Y'].apply(lambda x: str(x)) + \
+            ',' + crime_df['X'].apply(lambda x: str(x))
         crime_locations = crime_df['crime_coord'].values
         for crime_loc in crime_locations:
             for cop in self.cop_types:
                 cop_df = self.get_cops(cop)
                 if cop_df['id'].count() != 0:  # no cops available
                     break
-                cop_df['cop_coord'] = cop_df['lat'] + ',' + cop_df['long']
+                cop_df['cop_coord'] = cop_df['lat'].apply(lambda x: str(x)) + \
+                    ',' + cop_df['long'].apply(lambda x: str(x))
                 cop_df['time_away'] = cop_df['cop_coord']. \
                     apply(lambda x: kmeans.driving_distance(x.split(),
                                                             crime_loc.split()))
                 cop_id = cop_df.sort(columns='time_away').head()['id'].values
                 drive_dur = cop_df[cop_df['id'] == cop_id]['time_away'].values
+                self.sql.insert_data('%s_response' % cop,
+                                     [str(cop_id),
+                                      str(drive_dur)])
                 end_time = start_utc + drive_dur + self.response_time
                 self.move_cop(cop, cop_id=cop_id,
                               utc=start_utc,
                               cop_lat=crime_loc.split(',')[0],
                               cop_long=crime_loc.split(',')[1],
                               end_time=end_time,
-                              status='busy')
+                              status="'busy'")
 
 
 def preload():
-    df = pickle.load(open('../data/sfpd_incident_2014.csv', 'rb'))
-    km = pickle.load(open('../data/traind_km.pkl', 'rb'))
-    labels = pickle.load(open('../data/trained_prediction.pkl', 'rb'))
+    df = pd.read_csv('data/sfpd_incident_2014.csv')
+    km = pickle.load(open('data/trained_km2.pkl', 'rb'))
+    labels = pickle.load(open('data/trained_prediction.pkl', 'rb'))
     df['Regions'] = labels
     return df, km
 
@@ -349,4 +367,4 @@ if __name__ == '__main__':
     sim = SimPol(df, km)
     sim.initiate_region(7)
     sim.initiate_cops(cops_num=20, response_time=30)
-    sim.run()
+    sim.run('2014-06-29')
