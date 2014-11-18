@@ -15,16 +15,16 @@ from code import kmeans
 import argparse
 DATABASE = 'data/simulation.db'
 
-CURRENT_PDS = {'RICHMOND': (37.77993,-122.46447),
-               'MISSION': (37.76285,-122.42201),
-               'NORTHERN': (37.78019,-122.43245),
-               'CENTRAL': (37.79866,-122.40996),
-               'TENDERLOIN': (37.78366,-122.41290),
-               'SOUTHERN': (37.77544,-122.40394),
-               'TARAVAL': (37.74383,-122.48117),
-               'INGLESIDE': (37.72468,-122.44622),
-               'PARK': (37.76780,-122.45529),
-               'BAYVIEW': (37.72975,-122.39790)}
+CURRENT_PDS = {'RICHMOND': (37.77993, -122.46447),
+               'MISSION': (37.76285, -122.42201),
+               'NORTHERN': (37.78019, -122.43245),
+               'CENTRAL': (37.79866, -122.40996),
+               'TENDERLOIN': (37.78366, -122.41290),
+               'SOUTHERN': (37.77544, -122.40394),
+               'TARAVAL': (37.74383, -122.48117),
+               'INGLESIDE': (37.72468, -122.44622),
+               'PARK': (37.76780, -122.45529),
+               'BAYVIEW': (37.72975, -122.39790)}
 
 
 class SimPol(object):
@@ -56,8 +56,8 @@ class SimPol(object):
             for table in self.tables:
                 self.sql.truncate_table(cop+table)
 
-    def initiate_region(self, region, current_pd=False):
-        if current_pd:
+    def initiate_region(self, region, current_pd='-1'):
+        if current_pd != '-1':
             self.region = current_pd
             self.center = CURRENT_PDS[current_pd]
             self.df = self.df[self.df['PdDistrict'] == self.region].copy()
@@ -110,7 +110,7 @@ class SimPol(object):
                                   to_lat=self.center[0],
                                   to_long=self.center[1],
                                   gmaps=False)
-                if osrm.driving_drections() != 'Failed':
+                if osrm.driving_directions() != 'Failed':
                     break
             else:
                 if self.kmean.predict(X, gmaps=False) == self.region:
@@ -315,6 +315,7 @@ class SimPol(object):
                           to_lat=to_lat,
                           to_long=to_long,
                           gmaps=False)
+
         if osrm.r == 'Failed':
             print 'Failed'
             return from_lat, from_long, interval
@@ -393,9 +394,19 @@ if __name__ == '__main__':
     parser.add_argument('cop_num', type=int, help='Number of Cops')
     parser.add_argument('response_time', type=int, help='Minutes per crime')
     parser.add_argument('date', type=str, help='date to simulate (YYYY-MM-DD)')
+    parser.add_argument('-current_pd', type=str,
+                        help="""
+                        Run simulation on current police districts. Leaving it
+                        blank will run the simulation on the region passed.
+                        Choices are: 'RICHMOND', 'MISSION', 'NORTHERN',
+                                     'CENTRAL', 'TENDERLOIN', 'SOUTHERN',
+                                     'TARAVAL', 'INGLESIDE', 'PARK', 'BAYVIEW'
+                        """)
     args = parser.parse_args()
+    if args.current_pd is None:
+        args.current_pd = '-1'
     df, km = preload()
     sim = SimPol(df, km)
-    sim.initiate_region(args.region)
+    sim.initiate_region(args.region, current_pd=args.current_pd)
     sim.initiate_cops(cops_num=args.cop_num, response_time=args.response_time)
     sim.run(args.date)
