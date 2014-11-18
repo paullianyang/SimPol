@@ -1,38 +1,30 @@
-##Are Police Stations optimially located and staffed in SF?
->Using clustering to determine optimal locations according to where crime occurs and estimate the minimum number of cops needed at any given time
+##Are Police Districts optimally located?
+>Using clustering to determine optimal locations according to where crime occurs
 
-####Presentation:  
->Show a timelapse heatmap of crime in SF as it relates to size and location/staff/budget of current PD compared to optimal.
+####[Web App (coming soon)](http://simpol.paullianyang.com/)
 
-####Steps:
-######Data Collection
-> Ideally, Obtain officer count by district, response times by district, and crime by location
+###Running Locally
+####Dependencies
+To effectively run the simulation, OSRM needs to be installed and running on the machine  
+OSRM (Open Source Routing Machine) will be used to calculate driving distance and duration
+>[Install Dependencies](https://github.com/Project-OSRM/osrm-backend/wiki/Building%20OSRM#mac-os-x-1071-1082)  
+>[Fetch and compile source](https://github.com/Project-OSRM/osrm-backend/wiki/Building%20OSRM#fetch-the-source)  
+>[Download OSM data for California](http://download.geofabrik.de/north-america/us/california.html)  
+>[Extract the road network](https://github.com/Project-OSRM/osrm-backend/wiki/Running-OSRM#extracting-the-road-network)
 
-######Currently found/available:  
->Salary by employee without location  
->Crime by location, type and severity  
->Staffing in aggregate by county
->Outdated aggregated response times for 2001-2003
+The simulation also uses the [Google Distance Matrix API](https://developers.google.com/maps/documentation/distancematrix/). You will need to create a "gmaps_apikey" method in a filed called keys.py that will return the API string.
 
-######Still need:
->Staffing by police district
->Recent response times
+[Install Anaconda](http://continuum.io/downloads) to ensure you have the proper python packages
 
-#####Analysis  
-1. Use clustering to group crime data by geolocation, type/severity, and various time metrics, and identify cluster centers as hypothetical police stations
-2. Look at the relationship between staffing counts by PD vs the number of incidents each PD responds to
-3. Identify relationship between response time vs traffic data, distance from incident, and available police staff
- 1. If 2 & 3 are available, look at the relationship between response times and staffing.
- 2. If 2 & 3 are not available, estimate a minimum staff per district by the incidents that were covered, and look at the relationship between the number of handled incidents vs distance from police station.
-4. Predict response time/coverage with hypothetical optimal locations
-5. [Extra] Predict probability of a crime incident by crime cluster/type looking at historic data.
+[Install sqlite](https://www.sqlite.org/download.html)
 
-#####Data Product:  
-1. Create visual circuitry of police stations to crime incidents.
-2. Color edges by estimated response time
-3. Add time progression
-4. Do the same with predicted optimal locations
-5. Show optimal locations if PD can be dynamically located. In this case, PD is conceptually where the majority of the patrols should be occuring.
+####Using the simulation with pretrained clusters
+Run OSRM: ./osrm-routed [location of california osrm file]  
+Run python simulation.py -h to see a description of the parameters to be passed
+>The region passed corresponds to the regions labelled below:
+![](https://raw.githubusercontent.com/paullianyang/SimPol/master/data/trained_clusters.png)
+
+
 
 ####Datasources:
 * [2013-2014 Staffing Counts by County and District](http://post.ca.gov/Data/Sites/1/post_docs/hiring/le-employment-stats.pdf)
