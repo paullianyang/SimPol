@@ -20,6 +20,7 @@ The simulation also uses the [Google Distance Matrix API](https://developers.goo
 
 ####Using the simulation with pretrained clusters
 Run OSRM: ./osrm-routed [location of california osrm file]  
+Run python db_setup.py to setup the database  
 Run python simulation.py -h to see a description of the parameters to be passed
 >The region passed corresponds to the regions labelled below:
 ![](https://raw.githubusercontent.com/paullianyang/SimPol/master/data/trained_clusters.png)
