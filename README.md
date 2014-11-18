@@ -1,5 +1,5 @@
 ##Are Police Districts optimally located?
->Using clustering to determine optimal locations according to where crime occurs
+Using clustering to determine optimal police districts according to where crime occurs
 
 ####[Web App (coming soon)](http://simpol.paullianyang.com/)
 
