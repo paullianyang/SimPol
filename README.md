@@ -36,4 +36,4 @@ Run python simulation.py -h to see a description of the parameters to be passed
 
 ####References:
 * [Model crime with Levy flights](https://dl.dropboxusercontent.com/u/67300625/tum_summer_2012_levicrime.pdf)
-* [A very similar study](http://ced.berkeley.edu/faculty/ratt/classes/c188/2009Posters/Visconti%20Zhang%20Poster.pdf)
+* [Another approach](http://ced.berkeley.edu/faculty/ratt/classes/c188/2009Posters/Visconti%20Zhang%20Poster.pdf)
