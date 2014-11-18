@@ -171,14 +171,15 @@ class OSRM(object):
 
         # Certain Coordinates don't exist in OSRM
         # Fallback to GMaps API when this happens
-        # if status == 'Cannot find route between points' and self.gmaps:
-        #    print 'defaulting to gmaps'
-        #    gmaps = GMaps_Matrix(self.from_lat, self.from_long,
-        #                         self.to_lat, self.to_long)
-        #    return gmaps, 'gmaps'
+        if status == 'Cannot find route between points' and self.gmaps:
+           print 'defaulting to gmaps'
+           gmaps = GMaps_Matrix(self.from_lat, self.from_long,
+                                self.to_lat, self.to_long)
+           return gmaps, 'gmaps'
 
         # use only osrm
         if status == 'Cannot find route between points':
+            print 'Failed'
             print self.from_lat, ',', self.from_long
             print self.to_lat, ',', self.to_long
             return 'Failed', 'osrm'
@@ -196,7 +197,11 @@ class OSRM(object):
         if self.method == 'gmaps':
             return self.r.distance()
         else:
-            return self.r.json()['route_summary']['total_distance']
+            try:
+                distance = self.r.json()['route_summary']['total_distance']
+            except AttributeError:
+                distance = 'Failed'
+            return distance
 
     def duration(self):
         if self.method == 'gmaps':

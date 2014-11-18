@@ -12,7 +12,19 @@ from scipy.spatial.distance import euclidean
 import pickle
 import pandas as pd
 from code import kmeans
+import argparse
 DATABASE = 'data/simulation.db'
+
+CURRENT_PDS = {'RICHMOND': (37.77993,-122.46447),
+               'MISSION': (37.76285,-122.42201),
+               'NORTHERN': (37.78019,-122.43245),
+               'CENTRAL': (37.79866,-122.40996),
+               'TENDERLOIN': (37.78366,-122.41290),
+               'SOUTHERN': (37.77544,-122.40394),
+               'TARAVAL': (37.74383,-122.48117),
+               'INGLESIDE': (37.72468,-122.44622),
+               'PARK': (37.76780,-122.45529),
+               'BAYVIEW': (37.72975,-122.39790)}
 
 
 class SimPol(object):
@@ -28,7 +40,6 @@ class SimPol(object):
         self.center = None
         self.cops_num = None
         self.cop_types = ['rcop', 'lcop', 'hcop', 'ccop']
-        # self.cop_types = ['rcop']
         self.crime_center = None
         self.df = self.clean_df(df)
         self.kmean = kmean
@@ -41,15 +52,19 @@ class SimPol(object):
         self.sql = utils.sqlite(DATABASE)
         self.sql.truncate_table('cops')
         self.tables = ['_moves', '_response', '_now']
-        # for cop in self.cop_types:
-        for cop in ['rcop', 'lcop', 'hcop', 'ccop']:
+        for cop in self.cop_types:
             for table in self.tables:
                 self.sql.truncate_table(cop+table)
 
-    def initiate_region(self, region):
-        self.region = region
-        self.center = self.kmean.cluster_centers_[self.region]
-        self.df = self.df[self.df['Regions'] == self.region].copy()
+    def initiate_region(self, region, current_pd=False):
+        if current_pd:
+            self.region = current_pd
+            self.center = CURRENT_PDS[current_pd]
+            self.df = self.df[self.df['PdDistrict'] == self.region].copy()
+        else:
+            self.region = region
+            self.center = self.kmean.cluster_centers_[self.region]
+            self.df = self.df[self.df['Regions'] == self.region].copy()
         self.highest_crime()
 
     def initiate_cops(self, cops_num, response_time):
@@ -89,8 +104,17 @@ class SimPol(object):
             samp_y = self.df.loc[index, ['Y', 'X']][0]
             samp_x = self.df.loc[index, ['Y', 'X']][1]
             X = np.array([[samp_y, samp_x]])
-            if self.kmean.predict(X) == self.region:
-                break
+            if type(self.region) == str:
+                osrm = utils.OSRM(from_lat=samp_y,
+                                  from_long=samp_x,
+                                  to_lat=self.center[0],
+                                  to_long=self.center[1],
+                                  gmaps=False)
+                if osrm.driving_drections() != 'Failed':
+                    break
+            else:
+                if self.kmean.predict(X, gmaps=False) == self.region:
+                    break
         return samp_y, samp_x
 
     def patrol_random(self):
@@ -181,7 +205,7 @@ class SimPol(object):
         '''
         start_date = datetime.strptime(date_string, '%Y-%m-%d')
         start_utc = utils.datetime_to_unixtime(start_date)
-        interval = 60*60  # each run is 60 minutes
+        interval = 60*30  # each run is 30 minutes
         iterations = int((60*60*24)/interval)
         for i in range(iterations):
             print 'Iteration: ', i, ' out of ', iterations
@@ -302,8 +326,6 @@ class SimPol(object):
             next_step = osrm.route_geometry()[1:]
             interval_ratio = 1 - (osrm.duration()-interval)/osrm.duration()
             distances = []
-            print 'from coord: ', from_lat, from_long
-            print 'to coord: ', to_lat, to_long
             for i in range(len(next_step)):
                 distances.append(euclidean(start[i], next_step[i]))
             for i in range(len(distances)):
@@ -312,7 +334,6 @@ class SimPol(object):
                     break
             dest_lat = next_step[i][0]
             dest_long = next_step[i][1]
-            print dest_lat, dest_long
             return dest_lat, dest_long, 0
 
     def dispatch_cops(self, crime_df, start_utc):
@@ -367,8 +388,14 @@ def preload():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Initiate Simulation')
+    parser.add_argument('region', type=int, help='Region to run')
+    parser.add_argument('cop_num', type=int, help='Number of Cops')
+    parser.add_argument('response_time', type=int, help='Minutes per crime')
+    parser.add_argument('date', type=str, help='date to simulate (YYYY-MM-DD)')
+    args = parser.parse_args()
     df, km = preload()
     sim = SimPol(df, km)
-    sim.initiate_region(7)
-    sim.initiate_cops(cops_num=20, response_time=60)
-    sim.run('2014-06-29')
+    sim.initiate_region(args.region)
+    sim.initiate_cops(cops_num=args.cop_num, response_time=args.response_time)
+    sim.run(args.date)
