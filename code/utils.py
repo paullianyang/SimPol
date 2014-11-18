@@ -34,7 +34,6 @@ class sqlite(object):
                 %s
             )
             ''' % (tablename, ','.join(values))
-
         self.c.execute(query)
         self.conn.commit()
 
@@ -50,7 +49,7 @@ class sqlite(object):
         query = '''
             INSERT INTO %s
             SELECT * FROM %s
-            ''' % (from_table, into_table)
+            ''' % (into_table, from_table)
         self.c.execute(query)
         self.conn.commit()
 
@@ -116,7 +115,7 @@ class GMaps_Matrix(object):
             if self.r.json()['status'] != 'OK':
                 # sometimes fails with unknown error
                 # lets try it a second time
-                print self.r.jsion()['status']
+                print self.r.json()['status']
                 print self.from_lat, self.from_long, self.to_lat, self.to_long
                 self.r = self.get_requests()
         except ValueError:
@@ -139,13 +138,14 @@ class GMaps_Matrix(object):
 
 class OSRM(object):
     def __init__(self, from_lat, from_long, to_lat, to_long,
-                 ip='0.0.0.0', port=5000):
+                 ip='0.0.0.0', port=5000, gmaps=True):
         '''
         INPUT:
             from_lat, from_long - starting coordinates
             to_lat, to_long - destination coordinates
             ip - ip address of where osrm is running on
             port - port to connect to osrm
+            gmaps - T/F to allow use of gmaps API
         OUTPUT: None
 
         OSRM: (https://github.com/Project-OSRM/osrm-backend/wiki/Server-api)
@@ -157,6 +157,7 @@ class OSRM(object):
         self.to_long = to_long
         self.ip = ip
         self.port = port
+        self.gmaps = gmaps
         self.r, self.method = self.driving_directions()
 
     def driving_directions(self):
@@ -167,12 +168,21 @@ class OSRM(object):
             self.to_lat, self.to_long = \
                 self.find_nearest(self.to_lat, self.to_long)
             status, r = self.get_request()
+
         # Certain Coordinates don't exist in OSRM
         # Fallback to GMaps API when this happens
+        if status == 'Cannot find route between points' and self.gmaps:
+           print 'defaulting to gmaps'
+           gmaps = GMaps_Matrix(self.from_lat, self.from_long,
+                                self.to_lat, self.to_long)
+           return gmaps, 'gmaps'
+
+        # use only osrm
         if status == 'Cannot find route between points':
-            gmaps = GMaps_Matrix(self.from_lat, self.from_long,
-                                 self.to_lat, self.to_long)
-            return gmaps, 'gmaps'
+            print 'Failed'
+            print self.from_lat, ',', self.from_long
+            print self.to_lat, ',', self.to_long
+            return 'Failed', 'osrm'
         return r, 'osrm'
 
     def get_request(self):
@@ -187,7 +197,11 @@ class OSRM(object):
         if self.method == 'gmaps':
             return self.r.distance()
         else:
-            return self.r.json()['route_summary']['total_distance']
+            try:
+                distance = self.r.json()['route_summary']['total_distance']
+            except AttributeError:
+                distance = 'Failed'
+            return distance
 
     def duration(self):
         if self.method == 'gmaps':

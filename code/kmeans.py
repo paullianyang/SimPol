@@ -12,7 +12,7 @@ from scipy.spatial.distance import euclidean, cityblock
 import utils
 
 
-def driving_distance(from_coord, to_coord):
+def driving_distance(from_coord, to_coord, gmaps=True):
     '''
     INPUT: lat/long tuple identifying origin,
            lat/long tuple identifying destination
@@ -20,7 +20,7 @@ def driving_distance(from_coord, to_coord):
     '''
     from_lat, from_long = from_coord
     to_lat, to_long = to_coord
-    return utils.OSRM(from_lat, from_long, to_lat, to_long).distance()
+    return utils.OSRM(from_lat, from_long, to_lat, to_long, gmaps=gmaps).distance()
 
 
 class kmeans(object):
@@ -77,17 +77,23 @@ class kmeans(object):
                 print new_centers
         self.labels_ = labels
 
-    def predict(self, X):
+    def predict(self, X, gmaps=True):
         '''
-        INPUT: 1-D numpy array
+        INPUT: 1-D numpy array, T/F to allow gmaps API
         OUTPUT: 1-D numpy array
 
         returns the closest center for each point
         '''
         labels = np.zeros(X.shape[0])
         for i, datapoint in enumerate(X):
-            distances = [self.distance(datapoint, center)
+            distances = [self.distance(datapoint, center, gmaps)
                          for center in self.cluster_centers_]
+            # OSRM doesn't have driving directions for all points
+            # usually I back into the gmaps API
+            # but the simulation easily goes over the request limit
+            # For the simulation, if 'Failed', we'll choose a new point
+            if 'Failed' in distances:
+                return 'Failed'
             labels[i] = np.argmin(distances)
             if self.verbose:
                 if i % 100 == 0:

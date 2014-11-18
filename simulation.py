@@ -5,13 +5,26 @@ to determine the optimal patrol strategy
 '''
 from __future__ import division
 import numpy as np
-import utils
-import split_city
+from code import utils
+from code import split_city
 from datetime import datetime
+from scipy.spatial.distance import euclidean
 import pickle
 import pandas as pd
-import kmeans
-DATABASE = '../data/simulation.db'
+from code import kmeans
+import argparse
+DATABASE = 'data/simulation.db'
+
+CURRENT_PDS = {'RICHMOND': (37.77993,-122.46447),
+               'MISSION': (37.76285,-122.42201),
+               'NORTHERN': (37.78019,-122.43245),
+               'CENTRAL': (37.79866,-122.40996),
+               'TENDERLOIN': (37.78366,-122.41290),
+               'SOUTHERN': (37.77544,-122.40394),
+               'TARAVAL': (37.74383,-122.48117),
+               'INGLESIDE': (37.72468,-122.44622),
+               'PARK': (37.76780,-122.45529),
+               'BAYVIEW': (37.72975,-122.39790)}
 
 
 class SimPol(object):
@@ -30,25 +43,28 @@ class SimPol(object):
         self.crime_center = None
         self.df = self.clean_df(df)
         self.kmean = kmean
-        self.min_y = None
-        self.max_y = None
-        self.min_x = None
-        self.max_x = None
         self.patrol = {'rcop': self.patrol_random,
                        'hcop': self.patrol_home,
-                       'ccop': self.patrol_crime}
+                       'ccop': self.patrol_crime,
+                       'lcop': None}
         self.region = None
         self.response_time = None
         self.sql = utils.sqlite(DATABASE)
+        self.sql.truncate_table('cops')
+        self.tables = ['_moves', '_response', '_now']
+        for cop in self.cop_types:
+            for table in self.tables:
+                self.sql.truncate_table(cop+table)
 
-    def initiate_region(self, region):
-        self.region = region
-        self.center = self.kmean.cluster_centers_[self.region]
-        label_indices = self.df['Region'] == self.region
-        self.min_y = self.df[label_indices]['Y'].min()
-        self.max_y = self.df[label_indices]['Y'].max()
-        self.min_x = self.df[label_indices]['X'].min()
-        self.max_x = self.df[label_indices]['X'].max()
+    def initiate_region(self, region, current_pd=False):
+        if current_pd:
+            self.region = current_pd
+            self.center = CURRENT_PDS[current_pd]
+            self.df = self.df[self.df['PdDistrict'] == self.region].copy()
+        else:
+            self.region = region
+            self.center = self.kmean.cluster_centers_[self.region]
+            self.df = self.df[self.df['Regions'] == self.region].copy()
         self.highest_crime()
 
     def initiate_cops(self, cops_num, response_time):
@@ -64,24 +80,41 @@ class SimPol(object):
         self.response_time = response_time*60
         for cop in range(self.cops_num):
             samp_y, samp_x = self.random_coord()
-            self.sql.insert_data('cops', [cop, samp_y, samp_x])
+            self.sql.insert_data('cops', [str(cop), str(samp_y), str(samp_x)])
             self.sql.insert_data('rcop_now',
-                                 [cop, 0, samp_y, samp_x, -1, 'available'])
+                                 [str(cop), '0',
+                                  str(samp_y), str(samp_x),
+                                  '-1', "'available'"])
             self.sql.insert_data('lcop_now',
-                                 [cop, 0, samp_y, samp_x, -1, 'available'])
+                                 [str(cop), '0',
+                                  str(samp_y), str(samp_x),
+                                  '-1', "'available'"])
             self.sql.insert_data('ccop_now',
-                                 [cop, 0, samp_y, samp_x, -1, 'available'])
+                                 [str(cop), '0',
+                                  str(samp_y), str(samp_x),
+                                  '-1', "'available'"])
             self.sql.insert_data('hcop_now',
-                                 [cop, 0, samp_y, samp_x, -1, 'available'])
+                                 [str(cop), '0',
+                                  str(samp_y), str(samp_x),
+                                  '-1', "'available'"])
 
     def random_coord(self):
         while True:
-            samp_y = (1+np.random.rand() *
-                      ((self.max_y-self.min_y)/self.min_y))*self.min_y
-            samp_x = (1+np.random.rand() *
-                      ((self.max_x-self.min_x)/self.min_x))*self.min_x
-            if self.kmean.predict([samp_x, samp_y]) == self.region:
-                break
+            index = np.random.choice(self.df.index.values)
+            samp_y = self.df.loc[index, ['Y', 'X']][0]
+            samp_x = self.df.loc[index, ['Y', 'X']][1]
+            X = np.array([[samp_y, samp_x]])
+            if type(self.region) == str:
+                osrm = utils.OSRM(from_lat=samp_y,
+                                  from_long=samp_x,
+                                  to_lat=self.center[0],
+                                  to_long=self.center[1],
+                                  gmaps=False)
+                if osrm.driving_drections() != 'Failed':
+                    break
+            else:
+                if self.kmean.predict(X, gmaps=False) == self.region:
+                    break
         return samp_y, samp_x
 
     def patrol_random(self):
@@ -99,12 +132,10 @@ class SimPol(object):
         # and find the most probable
         # region for crime
         # Use KDE on next iteration
-        label_indices = self.df['Region'] == self.region
-        X = self.df[label_indices][['Y', 'X']]
+        X = self.df[['Y', 'X']]
         km = split_city.split_city(X)
-        self.df[label_indices]['split_regions'] = km.labels_
-        most_crime = self.df[label_indices]['split_regions'].value_counts(). \
-            index[0]
+        self.df['split_regions'] = km.labels_
+        most_crime = self.df['split_regions'].value_counts().index[0]
         self.crime_center = km.cluster_centers_[most_crime]
 
     def move_cop(self, coptype,
@@ -144,14 +175,14 @@ class SimPol(object):
 
         preprocessing for simulation
         '''
-        df['split_region'] = -1
-        df['unixtime'] = df['Date'] + ' ' + df['Time']
-        df['unixtime'] = df['unixtime']. \
+        df['split_regions'] = -1
+        df['dtstring'] = df['Date'] + ' ' + df['Time']
+        df['dt'] = df['dtstring']. \
             apply(lambda x: datetime.strptime(x, '%m/%d/%Y %H:%M'))
-        df['unixtime'] = df['unixtime']. \
+        df['unixtime'] = df['dt']. \
             apply(lambda x: utils.datetime_to_unixtime(x))
-        df['X'] = df['X'].apply(lambda x: str(x))
-        df['Y'] = df['Y'].apply(lambda x: str(x))
+        df.pop('dt')
+        df.pop('dtstring')
         return df
 
     def get_crime(self, start_time, end_time):
@@ -161,10 +192,9 @@ class SimPol(object):
 
         Fetches crime that occured within a date interval
         '''
-        label_indices = self.df['Region'] = self.region
         crime_start = self.df['unixtime'] >= start_time
-        crime_end = self.df['unixtime'] < start_time
-        return self.df[crime_start & crime_end & label_indices]
+        crime_end = self.df['unixtime'] < end_time
+        return self.df[crime_start & crime_end]
 
     def run(self, date_string):
         '''
@@ -175,16 +205,22 @@ class SimPol(object):
         '''
         start_date = datetime.strptime(date_string, '%Y-%m-%d')
         start_utc = utils.datetime_to_unixtime(start_date)
-        interval = 60  # each run is 60 seconds
-        iterations = (60*60*24)/interval
+        interval = 60*30  # each run is 30 minutes
+        iterations = int((60*60*24)/interval)
         for i in range(iterations):
+            print 'Iteration: ', i, ' out of ', iterations
             end_utc = start_utc + interval
             crime_df = self.get_crime(start_time=start_utc,
                                       end_time=end_utc)
+            print 'Check Busy: ', i
             self.check_busy(start_utc)
+            print 'Dispatch Cops: ', i
             self.dispatch_cops(crime_df, start_utc)
+            print 'Patrol Cops: ', i
             self.patrol_cops(start_utc, interval)
-            self.update()
+            for cop in self.cop_types:
+                self.update(cop)
+            start_utc += interval
 
     def check_busy(self, start_utc):
         '''
@@ -225,38 +261,43 @@ class SimPol(object):
             patrol = self.patrol[cop]
             cop_df = self.get_cops(cop)
             for row in range(len(cop_df)):
-                cop_id = cop_df.ix[0]['id']
-                cop_lat = cop_df.ix[0]['lat']
-                cop_long = cop_df.ix[0]['long']
+                cop_interval = interval
+                cop_id = cop_df.ix[row]['id']
+                cop_lat = cop_df.ix[row]['lat']
+                cop_long = cop_df.ix[row]['long']
                 if cop == 'lcop':
                     pass  # lcop does not patrol
                 elif cop == 'rcop':
                     patrol_lat, patrol_long = patrol()
                     while patrol_lat == cop_lat and patrol_long == cop_long:
                         patrol_lat, patrol_long = patrol()
-                    while interval > 0:
-                        cop_lat, cop_long, interval = \
+                    while cop_interval > 0:
+                        cop_lat, cop_long, cop_interval = \
                             self.find_location(from_lat=cop_lat,
                                                from_long=cop_long,
                                                to_lat=patrol_lat,
                                                to_long=patrol_long,
-                                               interval=interval)
+                                               interval=cop_interval)
+                        patrol_lat, patrol_long = patrol()
                 else:
                     patrol_lat, patrol_long = patrol()
-                    if patrol_lat != cop_lat or patrol_long != cop_long:
-                        while interval > 0:
-                            cop_lat, cop_long, interval = \
+                    while cop_interval > 0:
+                        if patrol_lat != cop_lat or patrol_long != cop_long:
+                            cop_lat, cop_long, cop_interval = \
                                 self.find_location(from_lat=cop_lat,
                                                    from_long=cop_long,
                                                    to_lat=patrol_lat,
                                                    to_long=patrol_long,
-                                                   interval=interval)
+                                                   interval=cop_interval)
+                            patrol_lat, patrol_long = patrol()
+                        else:
+                            break
                 self.move_cop(cop, cop_id=cop_id,
                               utc=start_utc,
                               cop_lat=cop_lat,
                               cop_long=cop_long,
                               end_time=-1,
-                              status='available')
+                              status="'available'")
 
     def find_location(self, from_lat, from_long, to_lat, to_long, interval):
         '''
@@ -272,40 +313,28 @@ class SimPol(object):
         osrm = utils.OSRM(from_lat=from_lat,
                           from_long=from_long,
                           to_lat=to_lat,
-                          to_long=to_long)
+                          to_long=to_long,
+                          gmaps=False)
+        if osrm.r == 'Failed':
+            print 'Failed'
+            return from_lat, from_long, interval
         if osrm.duration() < interval:
             time_left = interval - osrm.duration()
             return to_lat, to_long, time_left
         else:
             start = osrm.route_geometry()
             next_step = osrm.route_geometry()[1:]
-            duration = 0
+            interval_ratio = 1 - (osrm.duration()-interval)/osrm.duration()
+            distances = []
             for i in range(len(next_step)):
-                # there's a bug with ORSM route geometrys
-                # where a destination on an intersection may
-                # be interpretted heading in another direction
-                # a hack will be to take flip the directions and
-                # take the one with the smaller duration
-                step_dur = utils.OSRM(from_lat=start[i][0],
-                                      from_long=start[i][1],
-                                      to_lat=next_step[i][0],
-                                      to_long=next_step[i][1]).duration()
-                step_dur2 = utils.OSRM(to_lat=start[i][0],
-                                       to_long=start[i][1],
-                                       from_lat=next_step[i][0],
-                                       from_long=next_step[i][1]).duration()
-                step_dur = min(step_dur, step_dur2)
-                if duration+step_dur < interval:
-                    duration += step_dur
-                    ratio = 1
-                else:
-                    ratio = (duration+step_dur)/interval
-                    duration = interval
+                distances.append(euclidean(start[i], next_step[i]))
+            for i in range(len(distances)):
+                percent_travelled = sum(distances[:i+1])/sum(distances)
+                if percent_travelled > interval_ratio:
                     break
-            dest_lat = next_step[i][0]*ratio
-            dest_long = next_step[i][1]*ratio
-            time_left = interval - duration
-            return dest_lat, dest_long, time_left
+            dest_lat = next_step[i][0]
+            dest_long = next_step[i][1]
+            return dest_lat, dest_long, 0
 
     def dispatch_cops(self, crime_df, start_utc):
         '''
@@ -314,39 +343,59 @@ class SimPol(object):
 
         assigns cops to crime for each cop type
         '''
-        crime_df['crime_coord'] = crime_df['Y'] + ',' + crime_df['X']
-        crime_locations = crime_df['crime_coord'].values
-        for crime_loc in crime_locations:
+        crime_locations = crime_df[['Y', 'X']].values
+        for crime_lat, crime_long in crime_locations:
+            crime_coord = (crime_lat, crime_long)
             for cop in self.cop_types:
                 cop_df = self.get_cops(cop)
-                if cop_df['id'].count() != 0:  # no cops available
+                if cop_df['id'].count() == 0:  # no cops available
                     break
-                cop_df['cop_coord'] = cop_df['lat'] + ',' + cop_df['long']
-                cop_df['time_away'] = cop_df['cop_coord']. \
-                    apply(lambda x: kmeans.driving_distance(x.split(),
-                                                            crime_loc.split()))
-                cop_id = cop_df.sort(columns='time_away').head()['id'].values
-                drive_dur = cop_df[cop_df['id'] == cop_id]['time_away'].values
+                cop_df['cop_coord'] = cop_df['lat'].apply(lambda x: str(x)) + \
+                    ',' + cop_df['long'].apply(lambda x: str(x))
+                cop_df['distance_away'] = cop_df['cop_coord']. \
+                    apply(lambda x:
+                          kmeans.driving_distance((float(x.split(',')[0]),
+                                                   float(x.split(',')[1])),
+                                                  crime_coord))
+                cop_id = cop_df.sort(columns='distance_away'). \
+                    head(1)['id'].values[0]
+                cop_lat = cop_df[cop_df['id'] == cop_id]['lat'].values
+                cop_long = cop_df[cop_df['id'] == cop_id]['long'].values
+                drive_dur = utils.OSRM(from_lat=cop_lat,
+                                       from_long=cop_long,
+                                       to_lat=crime_lat,
+                                       to_long=crime_long,
+                                       gmaps=False).duration()
+                self.sql.insert_data('%s_response' % cop,
+                                     ["'%d'" % cop_id,
+                                      "'%d'" % drive_dur])
                 end_time = start_utc + drive_dur + self.response_time
                 self.move_cop(cop, cop_id=cop_id,
                               utc=start_utc,
-                              cop_lat=crime_loc.split(',')[0],
-                              cop_long=crime_loc.split(',')[1],
+                              cop_lat=crime_lat,
+                              cop_long=crime_long,
                               end_time=end_time,
-                              status='busy')
+                              status="'busy'")
 
 
 def preload():
-    df = pickle.load(open('../data/sfpd_incident_2014.csv', 'rb'))
-    km = pickle.load(open('../data/traind_km.pkl', 'rb'))
-    labels = pickle.load(open('../data/trained_prediction.pkl', 'rb'))
+    df = pd.read_csv('data/sfpd_incident_2014.csv')
+    km = pickle.load(open('data/trained_km2.pkl', 'rb'))
+    km.verbose = False
+    labels = pickle.load(open('data/trained_prediction.pkl', 'rb'))
     df['Regions'] = labels
     return df, km
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Initiate Simulation')
+    parser.add_argument('region', type=int, help='Region to run')
+    parser.add_argument('cop_num', type=int, help='Number of Cops')
+    parser.add_argument('response_time', type=int, help='Minutes per crime')
+    parser.add_argument('date', type=str, help='date to simulate (YYYY-MM-DD)')
+    args = parser.parse_args()
     df, km = preload()
     sim = SimPol(df, km)
-    sim.initiate_region(7)
-    sim.initiate_cops(cops_num=20, response_time=30)
-    sim.run()
+    sim.initiate_region(args.region)
+    sim.initiate_cops(cops_num=args.cop_num, response_time=args.response_time)
+    sim.run(args.date)
