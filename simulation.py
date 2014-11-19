@@ -112,6 +112,7 @@ class SimPol(object):
                                   gmaps=False)
                 if osrm.driving_directions() != 'Failed':
                     break
+                print 'random_coord: Failed', samp_y, samp_x
             else:
                 if self.kmean.predict(X, gmaps=False) == self.region:
                     break
@@ -315,17 +316,33 @@ class SimPol(object):
                           to_lat=to_lat,
                           to_long=to_long,
                           gmaps=False)
-
+        flipped = False
         if osrm.r == 'Failed':
-            print 'Failed'
-            return from_lat, from_long, interval
+            # Theres a bug with OSRM where some coordinates
+            # only have directions to there but not from
+            # In this case, I'll find the reverse directions
+            # and find the location in reverse
+            osrm2 = utils.OSRM(to_lat=from_lat,
+                               to_long=from_long,
+                               from_lat=to_lat,
+                               from_long=to_long,
+                               gmaps=False)
+            if osrm2.r == 'Failed':
+                print 'Failed'
+                return from_lat, from_long, interval
+            else:
+                osrm = osrm2
+                flipped = True
         if osrm.duration() < interval:
             time_left = interval - osrm.duration()
             return to_lat, to_long, time_left
         else:
             start = osrm.route_geometry()
             next_step = osrm.route_geometry()[1:]
-            interval_ratio = 1 - (osrm.duration()-interval)/osrm.duration()
+            if flipped:
+                interval_ratio = (osrm.duration()-interval)/osrm.duration()
+            else:
+                interval_ratio = 1 - (osrm.duration()-interval)/osrm.duration()
             distances = []
             for i in range(len(next_step)):
                 distances.append(euclidean(start[i], next_step[i]))
@@ -362,11 +379,22 @@ class SimPol(object):
                     head(1)['id'].values[0]
                 cop_lat = cop_df[cop_df['id'] == cop_id]['lat'].values
                 cop_long = cop_df[cop_df['id'] == cop_id]['long'].values
-                drive_dur = utils.OSRM(from_lat=cop_lat,
-                                       from_long=cop_long,
-                                       to_lat=crime_lat,
-                                       to_long=crime_long,
-                                       gmaps=False).duration()
+                osrm = utils.OSRM(from_lat=cop_lat,
+                                  from_long=cop_long,
+                                  to_lat=crime_lat,
+                                  to_long=crime_long,
+                                  gmaps=False)
+                if osrm.r == 'Failed':
+                    # bug in osrm where a coordinate may have
+                    # directions to but not from
+                    # in this case we'll assume the reverse
+                    # direction is the same duration
+                    osrm = utils.OSRM(to_lat=cop_lat,
+                                      to_long=cop_long,
+                                      from_lat=crime_lat,
+                                      from_long=crime_long,
+                                      gmaps=False)
+                drive_dur = osrm.duration()
                 self.sql.insert_data('%s_response' % cop,
                                      ["'%d'" % cop_id,
                                       "'%d'" % drive_dur])
