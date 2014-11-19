@@ -393,7 +393,7 @@ class SimPol(object):
                                       to_long=cop_long,
                                       from_lat=crime_lat,
                                       from_long=crime_long,
-                                      gmaps=False)
+                                      gmaps=True)
                 drive_dur = osrm.duration()
                 self.sql.insert_data('%s_response' % cop,
                                      ["'%d'" % cop_id,
