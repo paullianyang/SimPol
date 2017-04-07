@@ -1,8 +1,6 @@
 ##Are Police Districts optimally located?
 Using clustering to determine optimal police districts, and simulation to measure response times.
 
-####[Web App (coming soon)](http://simpol.paullianyang.com/)
-
 ###Running Locally
 ####Dependencies
 To effectively run the simulation, OSRM needs to be installed and running on the machine  
